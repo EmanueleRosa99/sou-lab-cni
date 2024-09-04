@@ -15,6 +15,6 @@ Eseguire il comando vagrant up per la creazione ed il provisioning delle VM sui 
 (OPZIONALE) 
 Aggiunta nel file /etc/hosts dei due hostname per testare direttamente da macchina host il corretto funzionamento del bilanciatore. 
 
-192.168.50.11 grafana.local
-192.168.50.11 prometheus.local
+- 192.168.50.11 grafana.local
+- 192.168.50.11 prometheus.local
 
