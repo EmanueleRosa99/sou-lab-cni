@@ -1,0 +1,68 @@
+---
+- name: Creare la directory base per i volumi dei container
+  file:
+    path: /containers_vols
+    state: directory
+    mode: '0755'
+
+- name: Creare la directory di dati di Prometheus
+  file:
+    path: /containers_vols/prometheus/data
+    state: directory
+    mode: '0755'
+
+- name: Creare la directory di configurazione di Prometheus
+  file:
+    path: /containers_vols/prometheus/config
+    state: directory
+    mode: '0755'
+
+- name: Creare la directory di dati di Grafana
+  file:
+    path: /containers_vols/grafana/data
+    state: directory
+    mode: '0755'
+
+- name: Creare la directory di configurazione di Grafana
+  file:
+    path: /containers_vols/grafana/config
+    state: directory
+    mode: '0755'
+
+- name: Creare il file di configurazione di Prometheus
+  template:
+    src: prometheus.yml.j2
+    dest: /containers_vols/prometheus/config/prometheus.yml
+
+- name: Creare il file di configurazione di Grafana
+  template:
+    src: grafana.ini.j2
+    dest: /containers_vols/grafana/config/grafana.ini
+
+- name: Eseguire Prometheus in un container Podman
+  containers.podman.podman_container:
+    name: prometheus
+    image: docker.io/prom/prometheus:latest
+    state: started
+    restart_policy: always
+    expose: 9090
+    user: root
+    ports:
+      - "9090:9090"
+    volumes:
+      - /containers_vols/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml:Z
+      - /containers_vols/prometheus/data:/prometheus:Z
+
+- name: Eseguire Grafana in un container Podman
+  containers.podman.podman_container:
+    name: grafana
+    image: grafana/grafana:latest
+    state: started
+    restart_policy: always
+    expose: 3000
+    user: root
+    ports:
+      - "3000:3000"
+    volumes:
+      - /containers_vols/grafana/config/grafana.ini:/etc/grafana/grafana.ini:Z
+      - /containers_vols/grafana/data:/var/lib/grafana:Z

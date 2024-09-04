@@ -1,0 +1,64 @@
+---
+# tasks file for sou_haproxy
+- name: Assicurarsi che Podman sia installato
+  command: podman --version
+  register: podman_version
+  failed_when: podman_version.rc != 0
+
+- name: Creare la directory di configurazione di HAProxy
+  file:
+    path: /etc/haproxy
+    state: directory
+
+- name: Creare il file di configurazione di HAProxy
+  template:
+    src: haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg
+  notify:
+    - Riavviare HAProxy
+    
+- name: Aggiungere host a /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item }}"
+    state: present
+  loop:
+    - "192.168.50.11 grafana.local"
+    - "192.168.50.11 prometheus.local"
+
+- name: Creare directory per i certificati
+  file:
+    path: /etc/haproxy/certs
+    state: directory
+    mode: '0755'
+
+- name: Creare certificato self-signed
+  command: >
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -keyout /etc/haproxy/certs/haproxy.key
+    -out /etc/haproxy/certs/haproxy.crt
+    -subj "/C=IT/ST=State/L=City/O=Organization/OU=Unit/CN=foobar.local"
+  args:
+    creates: /etc/haproxy/certs/haproxy.crt
+
+- name: Unire certificato e chiave in un file PEM
+  shell: cat /etc/haproxy/certs/haproxy.crt /etc/haproxy/certs/haproxy.key > /etc/haproxy/certs/haproxy.pem
+  args:
+    creates: /etc/haproxy/certs/haproxy.pem
+
+- name: Eseguire HAProxy in un container Podman
+  containers.podman.podman_container:
+    name: haproxy
+    image: haproxy:latest
+    state: started
+    restart_policy: always
+    user: root
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:Z
+      - /etc/haproxy/certs:/etc/haproxy/certs
+    env:
+      HAPROXY_USER: haproxy
+

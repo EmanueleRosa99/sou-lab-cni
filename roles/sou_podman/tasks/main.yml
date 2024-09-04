@@ -1,0 +1,33 @@
+---
+# tasks file for sou_podman
+- name: Abilitare il repository universe
+  apt_repository:
+    repo: 'ppa:ubuntu-toolchain-r/test'
+    state: present
+
+- name: Aggiungere la chiave GPG per il repository
+  apt_key:
+    url: "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/Release.key"
+    state: present
+
+- name: Aggiungere il repository Podman
+  apt_repository:
+    repo: "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /"
+    state: present
+
+- name: Aggiornare l'elenco dei pacchetti
+  apt:
+    update_cache: yes
+
+- name: Installare Podman
+  apt:
+    name: podman
+    state: present
+
+- name: Verificare l'installazione di Podman
+  command: podman --version
+  register: podman_version
+
+- name: Stampare la versione di Podman installata
+  debug:
+    msg: "Podman versione: {{ podman_version.stdout }}"
